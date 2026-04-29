@@ -14,6 +14,7 @@
 - **工具调用能力**：通过Function Calling机制，赋予大模型"联网与行动"的能力
   - Arxiv论文搜索：连接真实的学术论文数据库
   - 网页内容抓取：获取论文详细信息
+  - 报告生成工具：生成结构化Markdown报告
 
 - **异步并发处理**：使用Asyncio实现多篇文献的并行处理，提高效率
   - 异步API请求
@@ -26,7 +27,7 @@
   - 执行时间统计
   - 关键信息提取
 
-- **Gradio可视化界面**：
+- **可视化界面**：
   - 实时执行日志追踪
   - 报告内容展示
   - Chain-of-Thought可视化
@@ -37,18 +38,20 @@
 .
 ├── agentic_workflow.py          # 核心智能体工作流实现
 ├── api_client.py               # API客户端（DeepSeek/Kimi）
-├── interactive_workflow.py      # 交互式Gradio界面
-├── visualization_app.py         # 可视化应用界面
-├── requirements.txt             # 项目依赖
-├── README.md                    # 项目说明文档
-└── .gitignore                   # Git忽略文件
+├── server.py                   # FastAPI后端服务
+├── web_interface.html          # Web前端界面
+├── run_agent.py                # 命令行运行脚本
+├── requirements.txt            # 项目依赖
+├── README.md                   # 项目说明文档
+└── .gitignore                  # Git忽略文件
 ```
 
 ## 环境依赖
 
 - Python 3.8+
 - 主要依赖库：
-  - `gradio` - Web界面框架
+  - `fastapi` - Web框架
+  - `uvicorn` - ASGI服务器
   - `aiohttp` - 异步HTTP请求
   - `requests` - HTTP请求库
   - `beautifulsoup4` - 网页解析
@@ -105,13 +108,17 @@ KIMI_API_KEY = "your_kimi_api_key_here"
 
 ## 快速开始
 
-### 启动交互式工作流
+### 启动后端服务
 
 ```bash
-python interactive_workflow.py
+python server.py
 ```
 
-启动后，访问 http://127.0.0.1:7864 查看Gradio界面。
+服务启动后，访问 http://localhost:8000 查看服务状态。
+
+### 启动前端界面
+
+直接打开 `web_interface.html` 文件，或在浏览器中打开该文件。
 
 ### 使用方法
 
@@ -120,15 +127,16 @@ python interactive_workflow.py
    - "调研人工智能领域的最新进展"
    - "分析金融行业的整体舆情"
    - "帮我调研生态环境领域的最新进展"
+   - "帮我调研2026年关于DPO算法的最新进展"
 
 2. 点击"启动工作流"按钮
 
 3. 查看执行日志和生成的报告
 
-### 启动可视化应用
+### 使用命令行运行
 
 ```bash
-python visualization_app.py
+python run_agent.py
 ```
 
 ## 工作流程
@@ -137,7 +145,7 @@ python visualization_app.py
 2. **文献搜索**：调用Arxiv API搜索相关论文
 3. **论文筛选**：分析搜索结果，选取最相关的论文
 4. **内容获取**：抓取选定论文的详细信息
-5. **智能分析**：使用大模型API分析论文内容
+5. **智能分析**：使用大模型API分析论文内容（并发处理）
 6. **报告生成**：整合所有信息，生成结构化报告
 
 ## Chain-of-Thought展示
@@ -152,7 +160,8 @@ python visualization_app.py
 ## 技术栈
 
 - **大语言模型**：DeepSeek-V3, Kimi
-- **Web框架**：Gradio
+- **Web框架**：FastAPI, Uvicorn
+- **前端**：HTML5, CSS3, JavaScript
 - **异步处理**：Asyncio, aiohttp
 - **API协议**：OpenAI兼容API格式
 - **论文数据库**：ArXiv API
@@ -163,6 +172,7 @@ python visualization_app.py
 - 如遇到API限流，请稍后重试
 - 报告内容取决于搜索到的论文质量
 - 建议使用真实的API密钥以获得更准确的分析结果
+- 启动前端前请确保后端服务正在运行
 
 ## 许可证
 

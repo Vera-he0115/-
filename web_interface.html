@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体工作流可视化与执行日志追踪</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #ff8833;
+        }
+        .status-section {
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .logs-section {
+            margin-top: 20px;
+        }
+        .logs {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .log-time {
+            font-size: 12px;
+            color: #666;
+        }
+        .log-step {
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .log-message {
+            margin-top: 4px;
+        }
+        .log-duration {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .log-api {
+            font-size: 12px;
+            color: #0066cc;
+            margin-top: 2px;
+        }
+        .log-keyinfo {
+            font-size: 12px;
+            color: #009933;
+            margin-top: 2px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,102,0,.3);
+            border-radius: 50%;
+            border-top-color: #ff6600;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>智能体工作流可视化与执行日志追踪</h1>
+        
+        <div class="input-section">
+            <label for="user-input">研究需求：</label><br>
+            <textarea id="user-input" placeholder="请输入您的研究需求，例如：帮我调研2026年关于DPO算法的最新进展"></textarea><br>
+            <button id="start-btn">启动工作流</button>
+        </div>
+        
+        <div class="status-section">
+            <label for="status">状态：</label><br>
+            <div id="status" class="status">就绪</div>
+        </div>
+        
+        <div class="logs-section">
+            <label>执行日志与思考链路：</label><br>
+            <div id="logs" class="logs">暂无执行日志</div>
+        </div>
+    </div>
+    
+    <script>
+        // 获取DOM元素
+        const userInput = document.getElementById('user-input');
+        const startBtn = document.getElementById('start-btn');
+        const status = document.getElementById('status');
+        const logs = document.getElementById('logs');
+        
+        // 设置默认值
+        userInput.value = "帮我调研2026年关于DPO算法的最新进展";
+        
+        // 添加日志
+        function addLog(step, message, duration, apiCall, keyInfo) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            logEntry.innerHTML = `
+                <div class="log-time">${timeStr} - ${step}</div>
+                <div class="log-message">${message}</div>
+                ${duration ? `<div class="log-duration">耗时: ${duration.toFixed(2)}秒</div>` : ''}
+                ${apiCall ? `<div class="log-api">API调用: ${apiCall}</div>` : ''}
+                ${keyInfo ? `<div class="log-keyinfo">关键信息: ${keyInfo}</div>` : ''}
+            `;
+            
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        // 实际工作流执行
+        async function runWorkflow(userInput) {
+            status.innerHTML = "工作流启动中... <div class='loading'></div>";
+            logs.innerHTML = "";
+            
+            try {
+                // 发送请求到后端
+                const response = await fetch('http://localhost:8000/run-workflow', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_input: userInput })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('后端服务响应失败');
+                }
+                
+                const data = await response.json();
+                
+                // 显示日志
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(logEntry => {
+                        // 解析日志内容，提取步骤和消息
+                        let step = logEntry.role;
+                        let message = logEntry.message;
+                        
+                        // 尝试从消息中提取耗时、API调用和关键信息
+                        let duration = null;
+                        let apiCall = null;
+                        let keyInfo = null;
+                        
+                        if (message.includes('耗时:')) {
+                            const durationMatch = message.match(/耗时: ([\d.]+)秒/);
+                            if (durationMatch) {
+                                duration = parseFloat(durationMatch[1]);
+                            }
+                        }
+                        
+                        if (message.includes('API调用:')) {
+                            const apiMatch = message.match(/API调用: ([^,]+)/);
+                            if (apiMatch) {
+                                apiCall = apiMatch[1];
+                            }
+                        }
+                        
+                        if (message.includes('关键信息:')) {
+                            const keyInfoMatch = message.match(/关键信息: ([^,]+)/);
+                            if (keyInfoMatch) {
+                                keyInfo = keyInfoMatch[1];
+                            }
+                        }
+                        
+                        addLog(step, message, duration, apiCall, keyInfo);
+                    });
+                }
+                
+                // 显示结果
+                if (data.status === 'success') {
+                    status.innerHTML = `报告已生成：${data.report_path}`;
+                    addLog("完成", "智能体工作流执行完成");
+                } else {
+                    status.innerHTML = `错误: ${data.message}`;
+                    addLog("错误", data.message);
+                }
+            } catch (error) {
+                status.innerHTML = `错误: ${error.message}`;
+                addLog("错误", error.message);
+            }
+        }
+        
+        // 模拟数据 - 根据不同的调研需求返回不同的论文
+        function getMockSearchResults(userInput) {
+            if (userInput.includes("DPO")) {
+                return [
+                    {
+                        "title": "DPO Algorithm: Recent Advances in 2026",
+                        "summary": "This paper presents the latest advances in DPO algorithm, including improved stability and convergence speed.",
+                        "url": "https://arxiv.org/abs/2601.00001",
+                        "published": "2026-01-01"
+                    },
+                    {
+                        "title": "DPO in Practice: Applications and Case Studies",
+                        "summary": "This paper discusses the practical applications of DPO algorithm in various domains.",
+                        "url": "https://arxiv.org/abs/2602.00002",
+                        "published": "2026-02-01"
+                    },
+                    {
+                        "title": "Theoretical Foundations of DPO: A New Perspective",
+                        "summary": "This paper provides a new theoretical perspective on DPO algorithm and its properties.",
+                        "url": "https://arxiv.org/abs/2603.00003",
+                        "published": "2026-03-01"
+                    }
+                ];
+            } else if (userInput.includes("人工智能") || userInput.includes("AI")) {
+                return [
+                    {
+                        "title": "Artificial Intelligence: Recent Advances in 2026",
+                        "summary": "This paper presents the latest advances in artificial intelligence, including large language models and computer vision.",
+                        "url": "https://arxiv.org/abs/2601.00001",
+                        "published": "2026-01-01"
+                    },
+                    {
+                        "title": "AI in Practice: Applications and Case Studies",
+                        "summary": "This paper discusses the practical applications of AI in various domains, including healthcare and finance.",
+                        "url": "https://arxiv.org/abs/2602.00002",
+                        "published": "2026-02-01"
+                    },
+                    {
+                        "title": "Theoretical Foundations of AI: A New Perspective",
+                        "summary": "This paper provides a new theoretical perspective on artificial intelligence and its properties.",
+                        "url": "https://arxiv.org/abs/2603.00003",
+                        "published": "2026-03-01"
+                    }
+                ];
+            } else {
+                return [
+                    {
+                        "title": "Research Advances in 2026",
+                        "summary": "This paper presents the latest research advances in the field.",
+                        "url": "https://arxiv.org/abs/2601.00001",
+                        "published": "2026-01-01"
+                    },
+                    {
+                        "title": "Applications and Case Studies",
+                        "summary": "This paper discusses practical applications in various domains.",
+                        "url": "https://arxiv.org/abs/2602.00002",
+                        "published": "2026-02-01"
+                    },
+                    {
+                        "title": "Theoretical Foundations: A New Perspective",
+                        "summary": "This paper provides a new theoretical perspective on the field.",
+                        "url": "https://arxiv.org/abs/2603.00003",
+                        "published": "2026-03-01"
+                    }
+                ];
+            }
+        }
+        
+        // 延迟函数
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // 启动按钮点击事件
+        startBtn.addEventListener('click', () => {
+            const input = userInput.value.trim();
+            if (input) {
+                runWorkflow(input);
+            } else {
+                alert('请输入研究需求');
+            }
+        });
+    </script>
+</body>
+</html>
