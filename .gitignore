@@ -37,6 +37,7 @@ env/
 .gradio/
 
 # Reports
+reports/
 report_*.md
 
 # Images
@@ -45,9 +46,6 @@ report_*.md
 *.jpeg
 *.gif
 *.bmp
-
-# HTML
-*.html
 
 # Temporary files
 test_*.py
@@ -60,3 +58,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# API keys (if accidentally committed)
+*.env
+.env.local
+.env.*.local
+
+# Jupyter notebooks
+.ipynb_checkpoints/
